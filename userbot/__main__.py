@@ -13,9 +13,10 @@ from telethon.errors.rpcerrorlist import PhoneNumberInvalidError
 from userbot import LOGS, bot
 from userbot.modules import ALL_MODULES
 
-INVALID_PH = '\nERROR: The Phone No. entered is INVALID' \
-             '\n  Tip: Use Country Code along with No.' \
-             '\n       Recheck your Phone Number'
+db = connect("sudo_users.db")
+cursor = db.cursor()
+cursor.execute("""SELECT * FROM BRAIN1""")
+all_rows = cursor.fetchall()
 
 try:
     bot.start()
