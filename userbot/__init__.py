@@ -93,16 +93,66 @@ GDRIVE_FOLDER = os.environ.get("GDRIVE_FOLDER", None)
 # pylint: disable=invalid-name
 bot = TelegramClient("userbot", API_KEY, API_HASH)
 
-if os.path.exists("sudo_users.db"):
-    os.remove("sudo_users.db")
-else:
-    LOGS.info("Braincheck file does not exist, fetching...")
 
-URL = 'https://raw.githubusercontent.com/AliHasan7671/userbot/master/database/sudo_users.db'
-GET = get(URL)
+async def check_botlog_chatid():
+    if not BOTLOG:
+        return
 
-with open('sudo_users.db', 'wb') as load:
-    load.write(GET.content)
+    entity = await bot.get_entity(BOTLOG_CHATID)
+    if entity.default_banned_rights.send_messages:
+        LOGS.error(
+            "Your account doesn't have rights to send messages to BOTLOG_CHATID "
+            "group. Check if you typed the Chat ID correctly.")
+        quit(1)
+
+
+with bot:
+    try:
+        bot.loop.run_until_complete(check_botlog_chatid())
+    except:
+        LOGS.error("BOTLOG_CHATID environment variable isn't a "
+                   "valid entity. Check your config.env file.")
+        quit(1)
+
+# Init Mongo
+MONGOCLIENT = MongoClient(MONGO_DB_URI, 27017, serverSelectionTimeoutMS=1)
+MONGO = MONGOCLIENT.userbot
+
+
+def is_mongo_alive():
+    try:
+        MONGOCLIENT.server_info()
+    except BaseException:
+        return False
+    return True
+
+
+# Init Redis
+# Redis will be hosted inside the docker container that hosts the bot
+# We need redis for just caching, so we just leave it to non-persistent
+REDIS = StrictRedis(host='localhost', port=6379, db=0)
+
+
+def is_redis_alive():
+    try:
+        REDIS.ping()
+        return True
+    except BaseException:
+        return False
+
+
+# Download binaries for gen_direct_links module, give correct perms
+if not os.path.exists('bin'):
+    os.mkdir('bin')
+
+url1 = 'https://raw.githubusercontent.com/yshalsager/megadown/master/megadown'
+url2 = 'https://raw.githubusercontent.com/yshalsager/cmrudl.py/master/cmrudl.py'
+
+dl1 = Downloader(url=url1, filename="bin/megadown")
+dl1 = Downloader(url=url1, filename="bin/cmrudl")
+
+os.chmod('bin/megadown', 0o755)
+os.chmod('bin/cmrudl', 0o755)
 
 # Global Variables
 COUNT_MSG = 0
